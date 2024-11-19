@@ -1,0 +1,11 @@
+server:
+  port: 9443
+  ssl:
+    certificate: ${HOME}/.config/devcerts/wallet-cert.pem
+    certificate-private-key: ${HOME}/.config/devcerts/wallet-key.pem
+
+eudiw:
+  issuerBaseUrl: https://wallet-dev.eudiw.se:8443
+  credentialHost: https://wallet-dev.eudiw.se:8443
+  clientId: eudiw-client
+  testServerBaseUrl:  https://wallet-dev.eudiw.se:9443

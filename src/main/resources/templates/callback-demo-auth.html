@@ -1,0 +1,54 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Getting Started: Serving Web Content</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+</head>
+<body>
+    <h1></h1>
+    <h2>Authenticate and Authorise</h2>
+    <p>Token response:</p>
+    <table>
+        <tr><td>accessToken</td><td th:text="|${accessToken}|"/></tr>
+        <tr><td>refreshToken</td><td th:text="|${refreshToken}|"/></tr>
+        <tr><td>idToken</td><td th:text="|${idToken}|"/></tr>
+    </table>
+
+    <h2>Issue credential</h2>
+    <p>Fetched credential with POST /credential</p>
+
+    <ul th:each="c : ${decodedCredentials}">
+        <li th:text="${c}">
+
+        </li>
+    </ul>
+
+    <form>
+        <input type="button" th:onclick="fetchCredential()" value="POST /credential">
+        <input type="text" id="credential">
+    </form>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var credentialEndpoint = /*[[${credentialEndpoint}]]*/ "";
+        var authHeader = /*[[${authHeaderValue}]]*/ "";
+        const fetchCredential =  () => {
+            fetch(credentialEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": authHeader,
+              },
+              body: JSON.stringify({ }),
+            }).then(response => response.text().then( (c) => {
+                console.log(credentialEndpoint, authHeader, response);
+                const credentialInput = document.getElementById('credential');
+                credentialInput.value = c;
+            }));
+        }
+        /*]]>*/
+    </script>
+</body>
+</html>
+

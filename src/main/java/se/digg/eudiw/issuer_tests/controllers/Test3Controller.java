@@ -1,5 +1,7 @@
 package se.digg.eudiw.issuer_tests.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
@@ -17,25 +19,30 @@ import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.util.DefaultUriBuilderFactory;
 import se.digg.eudiw.issuer_tests.config.EudiwConfig;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @Controller
-public class Test1Controller {
-    Logger logger = LoggerFactory.getLogger(Test1Controller.class);
+public class Test3Controller {
+    Logger logger = LoggerFactory.getLogger(Test3Controller.class);
 
     final URI callbackUri;
     final URI authzEndpoint;
@@ -43,17 +50,28 @@ public class Test1Controller {
 
     Nonce nonce = new Nonce(); // move to request
     CodeVerifier pkceVerifier = new CodeVerifier(); // move to request
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-	private EudiwConfig eudiwConfig;
+    private EudiwConfig eudiwConfig;
 
-    Test1Controller(@Autowired EudiwConfig eudiwConfig) {
+    private final RestTemplate restTemplate;
+
+    Test3Controller(@Autowired EudiwConfig eudiwConfig, @Autowired RestTemplate restTemplate) {
         logger.info("PreAuthController created");
         this.eudiwConfig = eudiwConfig;
 
-        callbackUri = URI.create(String.format("%s/callback-test-1-authorisation-flow", eudiwConfig.getTestServerBaseUrl()));
-        authzEndpoint = URI.create(String.format("%s/oauth2/authorize", eudiwConfig.getIssuerBaseUrl()));
+        callbackUri = URI.create(String.format("%s/callback-test-3-par", eudiwConfig.getTestServerBaseUrl()));
+        authzEndpoint = URI.create(String.format("%s/oauth2/par", eudiwConfig.getIssuerBaseUrl()));
         tokenEndpoint = URI.create(String.format("%s/oauth2/token", eudiwConfig.getIssuerBaseUrl()));
 
+        this.restTemplate = restTemplate;
+        // This allows us to read the response more than once - Necessary for debugging.
+        restTemplate.setRequestFactory(new BufferingClientHttpRequestFactory(restTemplate.getRequestFactory()));
+
+        // disable default URL encoding
+        DefaultUriBuilderFactory uriBuilderFactory = new DefaultUriBuilderFactory();
+        uriBuilderFactory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.VALUES_ONLY);
+        restTemplate.setUriTemplateHandler(uriBuilderFactory);
     }
 
     /**
@@ -61,8 +79,8 @@ public class Test1Controller {
      * @return
      * @throws URISyntaxException
      */
-    @GetMapping("/start-test-1-authorisation-flow")
-    public RedirectView initAuthFlow() throws URISyntaxException {
+    @GetMapping("/start-test-3-par")
+    public RedirectView initAuthFlow() throws URISyntaxException, JsonProcessingException {
 
         // Generate new random string to link the callback to the authZ request
         State state = new State();
@@ -72,24 +90,31 @@ public class Test1Controller {
         scope.add("openid");
         scope.add("profile");
 
-        AuthenticationRequest request = new AuthenticationRequest.Builder(
-                new ResponseType("code"),
-                scope,
-                new ClientID(eudiwConfig.getClientId()),
-                callbackUri)
-                .endpointURI(authzEndpoint)
-                .state(state)
-                .nonce(nonce)
-                .codeChallenge(pkceVerifier, CodeChallengeMethod.S256)
-                .build();
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.put("scope", List.of(scope.toString()));
+        params.put("response_type", List.of("code"));
+        params.put("redirect_uri", List.of(callbackUri.toString()));
+        params.put("state", List.of(state.getValue()));
+        params.put("code_challenge_method", List.of(CodeChallengeMethod.S256.getValue()));
+        params.put("code_challenge", List.of(pkceVerifier.getValue()));
+        params.put("nonce", List.of(nonce.getValue()));
+        params.put("client_id", List.of(eudiwConfig.getClientId()));
 
-        String redirectUri = request.toURI().toString();
-        logger.info("Redirecting to: " + redirectUri);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        HttpEntity<Map> request = new HttpEntity<>(params, headers);
 
-        return new RedirectView(redirectUri);
+        ResponseEntity<Map> response = restTemplate.postForEntity(authzEndpoint, request, Map.class);
+        logger.info("RESPONSE: {}", response);
+        String requestUri = (String) response.getBody().get("request_uri");
+        String authRedirectUri = String.format("%s/oauth2/authorize?request_uri=%s", eudiwConfig.getIssuerBaseUrl(), requestUri);
+        logger.info("Redirecting to: " + authRedirectUri);
+
+        return new RedirectView(authRedirectUri);
     }
 
-    @GetMapping(value = "/callback-test-1-authorisation-flow", produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(value = "/callback-test-3-par", produces = MediaType.TEXT_HTML_VALUE)
     public String welcomeAsHTML(@RequestParam("code") String codeParam, @RequestParam("state") String state, Model model) throws Exception {
           if (pkceVerifier == null) {
               throw new Exception("pkceVerifier is null");

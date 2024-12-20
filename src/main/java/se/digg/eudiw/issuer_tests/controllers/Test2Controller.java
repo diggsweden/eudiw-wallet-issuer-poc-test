@@ -28,14 +28,11 @@ import se.digg.eudiw.issuer_tests.config.EudiwConfig;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @Controller
-public class Test1Controller {
-    Logger logger = LoggerFactory.getLogger(Test1Controller.class);
+public class Test2Controller {
+    Logger logger = LoggerFactory.getLogger(Test2Controller.class);
 
     final URI callbackUri;
     final URI authzEndpoint;
@@ -46,11 +43,11 @@ public class Test1Controller {
 
 	private EudiwConfig eudiwConfig;
 
-    Test1Controller(@Autowired EudiwConfig eudiwConfig) {
+    Test2Controller(@Autowired EudiwConfig eudiwConfig) {
         logger.info("PreAuthController created");
         this.eudiwConfig = eudiwConfig;
 
-        callbackUri = URI.create(String.format("%s/callback-test-1-authorisation-flow", eudiwConfig.getTestServerBaseUrl()));
+        callbackUri = URI.create(String.format("%s/callback-test-2-pre-authorisation-flow", eudiwConfig.getTestServerBaseUrl()));
         authzEndpoint = URI.create(String.format("%s/oauth2/authorize", eudiwConfig.getIssuerBaseUrl()));
         tokenEndpoint = URI.create(String.format("%s/oauth2/token", eudiwConfig.getIssuerBaseUrl()));
 
@@ -61,7 +58,7 @@ public class Test1Controller {
      * @return
      * @throws URISyntaxException
      */
-    @GetMapping("/start-test-1-authorisation-flow")
+    @GetMapping("/start-test-2-pre-authorisation-flow")
     public RedirectView initAuthFlow() throws URISyntaxException {
 
         // Generate new random string to link the callback to the authZ request
@@ -89,7 +86,7 @@ public class Test1Controller {
         return new RedirectView(redirectUri);
     }
 
-    @GetMapping(value = "/callback-test-1-authorisation-flow", produces = MediaType.TEXT_HTML_VALUE)
+    @GetMapping(value = "/callback-test-2-pre-authorisation-flow", produces = MediaType.TEXT_HTML_VALUE)
     public String welcomeAsHTML(@RequestParam("code") String codeParam, @RequestParam("state") String state, Model model) throws Exception {
           if (pkceVerifier == null) {
               throw new Exception("pkceVerifier is null");
@@ -101,8 +98,10 @@ public class Test1Controller {
           logger.info("code: {}", codeParam);
 
         AuthorizationCode code = new AuthorizationCode(codeParam);
-        AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callbackUri, pkceVerifier);
-        logger.info("codeGrant: {}", codeGrant);
+        AuthorizationGrant codeGrant = new PreAuthCodeAuthorizationGrant(code, callbackUri, pkceVerifier);
+
+                // new AuthorizationCodeGrant(code, callbackUri, pkceVerifier);
+        logger.info("codeGrant: {}", codeGrant.toParameters());
 
 // The client ID to identify the client at the token endpoint
         ClientID clientID = new ClientID(eudiwConfig.getClientId());
@@ -117,7 +116,7 @@ public class Test1Controller {
         if (! tokenResponse.indicatesSuccess()) {
             // We got an error response...
             TokenErrorResponse errorResponse = tokenResponse.toErrorResponse();
-            logger.error("TokenErrorResponse: {}", tokenResponse.toErrorResponse());
+            logger.error("TokenErrorResponse: {}", tokenResponse.toErrorResponse().toJSONObject());
 
             return "callback-demo-auth";
         }
@@ -182,4 +181,31 @@ public class Test1Controller {
         return "callback-demo-auth";
       }
 
+      protected class PreAuthCodeAuthorizationGrant extends AuthorizationGrant {
+          private final AuthorizationCode code;
+          private final URI redirectURI;
+          private final CodeVerifier pkceVerifier;
+          private static final GrantType GRANT_TYPE = new GrantType("urn:ietf:params:oauth:grant-type:pre-authorized_code");
+
+          PreAuthCodeAuthorizationGrant(AuthorizationCode code, URI redirectURI, CodeVerifier pkceVerifier) {
+              super(GRANT_TYPE);
+              this.code = code;
+              this.redirectURI = redirectURI;
+              this.pkceVerifier = pkceVerifier;
+          }
+
+          @Override
+          public Map<String, List<String>> toParameters() {
+              Map<String, List<String>> params = new LinkedHashMap();
+              params.put("grant_type", Collections.singletonList(GRANT_TYPE.getValue()));
+              params.put("pre-authorized_code", Collections.singletonList(this.code.getValue()));
+              params.put("code", Collections.singletonList(this.code.getValue()));
+              if (this.redirectURI != null) {
+                  params.put("redirect_uri", Collections.singletonList(this.redirectURI.toString()));
+                  params.put("code_verifier", List.of(pkceVerifier.getValue()));
+              }
+
+              return params;
+          }
+      }
 }

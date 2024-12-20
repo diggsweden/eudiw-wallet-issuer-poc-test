@@ -4,8 +4,18 @@ server:
     certificate: ${HOME}/.config/devcerts/wallet-cert.pem
     certificate-private-key: ${HOME}/.config/devcerts/wallet-key.pem
 
+spring:
+  ssl:
+    bundle:
+      pem:
+        rest:
+          truststore:
+            # certificate path works in local sc-environment if the repos are located side by side
+            # otherwise: set the filepath with SPRING_SSL_BUNDLE_PEM_REST_TRUSTSTORE_CERTIFICATE environment variable
+            certificate: "file:../eudiw-prototype/sc-environment/config/common/tls.crt"
+            
 eudiw:
-  issuerBaseUrl: https://wallet-dev.eudiw.se:8443
-  credentialHost: https://wallet-dev.eudiw.se:8443
+  issuerBaseUrl: https://local.dev.swedenconnect.se:9090
+  credentialHost: https://local.dev.swedenconnect.se:9090
   clientId: eudiw-client
-  testServerBaseUrl:  https://wallet-dev.eudiw.se:9443
+  testServerBaseUrl:  https://local.dev.swedenconnect.se:9443

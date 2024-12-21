@@ -8,6 +8,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.State;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
@@ -39,6 +40,7 @@ import se.digg.eudiw.issuer_tests.config.EudiwConfig;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 public class Test3Controller {
@@ -96,7 +98,7 @@ public class Test3Controller {
         params.put("redirect_uri", List.of(callbackUri.toString()));
         params.put("state", List.of(state.getValue()));
         params.put("code_challenge_method", List.of(CodeChallengeMethod.S256.getValue()));
-        params.put("code_challenge", List.of(pkceVerifier.getValue()));
+        params.put("code_challenge", List.of(CodeChallenge.compute(CodeChallengeMethod.S256, pkceVerifier).getValue()));
         params.put("nonce", List.of(nonce.getValue()));
         params.put("client_id", List.of(eudiwConfig.getClientId()));
 
@@ -127,7 +129,8 @@ public class Test3Controller {
 
         AuthorizationCode code = new AuthorizationCode(codeParam);
         AuthorizationGrant codeGrant = new AuthorizationCodeGrant(code, callbackUri, pkceVerifier);
-        logger.info("codeGrant: {}", codeGrant);
+        logger.info("codeGrant: {}", codeGrant.toParameters().entrySet().stream().map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue().stream().map(String::valueOf)
+                .collect(Collectors.joining("-", "{", "}")))).collect(Collectors.joining(" ")));
 
 // The client ID to identify the client at the token endpoint
         ClientID clientID = new ClientID(eudiwConfig.getClientId());
@@ -142,7 +145,7 @@ public class Test3Controller {
         if (! tokenResponse.indicatesSuccess()) {
             // We got an error response...
             TokenErrorResponse errorResponse = tokenResponse.toErrorResponse();
-            logger.error("TokenErrorResponse: {}", tokenResponse.toErrorResponse());
+            logger.error("TokenErrorResponse: {}", errorResponse.toJSONObject());
 
             return "callback-demo-auth";
         }

@@ -17,5 +17,6 @@ spring:
 eudiw:
   issuerBaseUrl: https://local.dev.swedenconnect.se:9090
   credentialHost: https://local.dev.swedenconnect.se:9090
-  clientId: eudiw-client
+  clientId: 1234567890
+  # eudiw-client
   testServerBaseUrl:  https://local.dev.swedenconnect.se:9443

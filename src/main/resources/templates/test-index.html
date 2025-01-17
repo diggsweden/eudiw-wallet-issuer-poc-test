@@ -5,8 +5,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
 <body>
-    <h1>Auth flow</h1>
-
-    <a href="test-index">test index</a>
+    <ol>
+        <li th:each="testCase: ${testCases}">
+            <a th:href="${testCase}" th:text="|${testCase}|"/>
+        </li>
+    </ol>
 </body>
 </html>

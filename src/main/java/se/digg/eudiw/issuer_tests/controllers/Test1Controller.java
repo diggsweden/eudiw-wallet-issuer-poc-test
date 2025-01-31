@@ -28,10 +28,7 @@ import se.digg.eudiw.issuer_tests.config.EudiwConfig;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @Controller
 public class Test1Controller {
@@ -68,9 +65,10 @@ public class Test1Controller {
         State state = new State();
 
         Scope scope = new Scope();
-        scope.add("VerifiablePortableDocumentA1");
+        //scope.add("VerifiablePortableDocumentA1");
+        scope.add("eu.europa.ec.eudi.pid.1");
         scope.add("openid");
-        scope.add("profile");
+        //scope.add("profile");
 
         AuthenticationRequest request = new AuthenticationRequest.Builder(
                 new ResponseType("code"),
@@ -137,13 +135,15 @@ public class Test1Controller {
                 .defaultHeader("Authorization", String.format("Bearer %s", accessToken.getValue()))
                 .build();
 
-        String credential = client
+        Map credentialResponse = client
                 .post()
                 .uri(String.format("%s/credential", eudiwConfig.getCredentialHost()))
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new HashMap<String, String>())
+                .body(Map.of("format", "vc+sd-jwt", "vct", "urn:eu.europa.ec.eudi:pid:1"))
                 .retrieve()
-                .body(String.class);
+                .body(Map.class);
+
+        String credential = credentialResponse.get("credential").toString();
 
         String[] splittedCredential = credential == null ? new String[]{} : credential.split("~");
         List<String> decodedCredentials = Arrays.stream(splittedCredential).map(c -> {
@@ -172,13 +172,26 @@ public class Test1Controller {
             }
         }).toList();
 
+        String msoCredential = client
+                .post()
+                .uri(String.format("%s/credential", eudiwConfig.getCredentialHost()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("format", "mso_mdoc", "vct", "eu.europa.ec.eudi.pid.1"))
+                .retrieve()
+                .body(String.class);
+
+
         model.addAttribute("idToken", idToken);
         model.addAttribute("accessToken", accessToken.getValue());
         model.addAttribute("refreshToken", refreshToken);
 
         model.addAttribute("credentialEndpoint", String.format("%s/credential", eudiwConfig.getCredentialHost()));
         model.addAttribute("authHeaderValue", String.format("Bearer %s", accessToken.getValue()));
+        model.addAttribute("splittedCredential", splittedCredential);
+        model.addAttribute("credential", credential);
         model.addAttribute("decodedCredentials", decodedCredentials);
+        model.addAttribute("msoCredential", msoCredential);
+
         return "callback-demo-auth";
       }
 

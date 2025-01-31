@@ -18,11 +18,23 @@
     <h2>Issue credential</h2>
     <p>Fetched credential with POST /credential</p>
 
+    <h3>raw</h3>
+    <p th:text="${credential}"></p>
+
+    <ul th:each="c : ${splittedCredential}">
+        <li th:text="${c}">
+
+        </li>
+    </ul>
+    <h3>decoded</h3>
     <ul th:each="c : ${decodedCredentials}">
         <li th:text="${c}">
 
         </li>
     </ul>
+
+    <h3>mso mdoc</h3>
+    <p th:text="${msoCredential}"></p>
 
     <form>
         <input type="button" th:onclick="fetchCredential()" value="POST /credential">

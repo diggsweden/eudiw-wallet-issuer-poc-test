@@ -17,15 +17,19 @@ import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.view.RedirectView;
 import se.digg.eudiw.issuer_tests.config.EudiwConfig;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -139,7 +143,7 @@ public class Test1Controller {
                 .post()
                 .uri(String.format("%s/credential", eudiwConfig.getCredentialHost()))
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("format", "vc+sd-jwt", "vct", "urn:eu.europa.ec.eudi:pid:1"))
+                .body(Map.of("format", "vc+sd-jwt", "vct", "urn:eu.europa.ec.eudi:pid:1", "proof", Map.of("proof_type", "jwt", "jwt", "eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiUGJqb1lZc1FORHhhUjFSNzZsOVFfOVJ3emJkRjAtNzB4V1dHRFlPNU9iTSIsInkiOiI4U2lyMFJTS0J1Y1JQa0VCb3R5VEM3Vm1LcFQ5XzNBd0dTTE5UZ2F2YVZVIn19.eyJpc3MiOiJ3YWxsZXQtZGV2IiwiYXVkIjoiaHR0cHM6Ly9pc3N1ZXIuZXVkaXcuZGV2Iiwibm9uY2UiOiJtZlhVR2R3alhKUm5wdzgwNmdvTVpnIiwiaWF0IjoxNzM4MzMwNjUyfQ.RHdzk6m5sOIvxonRHJj9cnyEl5PFJq0z_sg46HtNJ52mZEDfQTDBWJQvyzwslCFropoFbd0BiRL61WTxyx6zTQ")))
                 .retrieve()
                 .body(Map.class);
 
@@ -176,7 +180,7 @@ public class Test1Controller {
                 .post()
                 .uri(String.format("%s/credential", eudiwConfig.getCredentialHost()))
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("format", "mso_mdoc", "vct", "eu.europa.ec.eudi.pid.1"))
+                .body(Map.of("format", "mso_mdoc", "doctype", "eu.europa.ec.eudi.pid.1", "proof", Map.of("proof_type", "jwt", "jwt", "eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiUGJqb1lZc1FORHhhUjFSNzZsOVFfOVJ3emJkRjAtNzB4V1dHRFlPNU9iTSIsInkiOiI4U2lyMFJTS0J1Y1JQa0VCb3R5VEM3Vm1LcFQ5XzNBd0dTTE5UZ2F2YVZVIn19.eyJpc3MiOiJ3YWxsZXQtZGV2IiwiYXVkIjoiaHR0cHM6Ly9pc3N1ZXIuZXVkaXcuZGV2Iiwibm9uY2UiOiJtZlhVR2R3alhKUm5wdzgwNmdvTVpnIiwiaWF0IjoxNzM4MzMwNjUyfQ.RHdzk6m5sOIvxonRHJj9cnyEl5PFJq0z_sg46HtNJ52mZEDfQTDBWJQvyzwslCFropoFbd0BiRL61WTxyx6zTQ")))
                 .retrieve()
                 .body(String.class);
 

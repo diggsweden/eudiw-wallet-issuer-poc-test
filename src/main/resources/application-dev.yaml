@@ -1,8 +1,8 @@
 server:
   port: 9443
   ssl:
-    certificate: ${HOME}/.config/devcerts/wallet-cert.pem
-    certificate-private-key: ${HOME}/.config/devcerts/wallet-key.pem
+    certificate: ${HOME}/.config/devcerts/local.dev.swedenconnect.se-cert.pem
+    certificate-private-key: ${HOME}/.config/devcerts/local.dev.swedenconnect.se-key.pem
 
 spring:
   ssl:

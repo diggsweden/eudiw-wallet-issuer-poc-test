@@ -65,9 +65,8 @@ public class Test2Controller {
         State state = new State();
 
         Scope scope = new Scope();
-        scope.add("VerifiablePortableDocumentA1");
+        scope.add("eu.europa.ec.eudi.pid.1");
         scope.add("openid");
-        scope.add("profile");
 
         AuthenticationRequest request = new AuthenticationRequest.Builder(
                 new ResponseType("code"),
@@ -140,7 +139,7 @@ public class Test2Controller {
                 .post()
                 .uri(String.format("%s/credential", eudiwConfig.getCredentialHost()))
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new HashMap<String, String>())
+                .body(Map.of("format", "vc+sd-jwt", "vct", "urn:eu.europa.ec.eudi:pid:1", "proof", Map.of("proof_type", "jwt", "jwt", "eyJ0eXAiOiJvcGVuaWQ0dmNpLXByb29mK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4IjoiUGJqb1lZc1FORHhhUjFSNzZsOVFfOVJ3emJkRjAtNzB4V1dHRFlPNU9iTSIsInkiOiI4U2lyMFJTS0J1Y1JQa0VCb3R5VEM3Vm1LcFQ5XzNBd0dTTE5UZ2F2YVZVIn19.eyJpc3MiOiJ3YWxsZXQtZGV2IiwiYXVkIjoiaHR0cHM6Ly9pc3N1ZXIuZXVkaXcuZGV2Iiwibm9uY2UiOiJtZlhVR2R3alhKUm5wdzgwNmdvTVpnIiwiaWF0IjoxNzM4MzMwNjUyfQ.RHdzk6m5sOIvxonRHJj9cnyEl5PFJq0z_sg46HtNJ52mZEDfQTDBWJQvyzwslCFropoFbd0BiRL61WTxyx6zTQ")))
                 .retrieve()
                 .body(String.class);
 
